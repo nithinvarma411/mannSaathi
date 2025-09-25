@@ -104,23 +104,28 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, []); // Dependency array is empty as it doesn't rely on outside props/state.
 
-  // Load conversations and counselors on initial load
+  // Load conversations and counselors on initial load, only if user is authenticated
   useEffect(() => {
-    const loadData = async () => {
-      // setLoading(true) is already handled by individual fetch functions, but this handles the collective loading state.
-      // We can simplify this a bit since the individual functions already set loading.
-      // Let's keep it simple and rely on the individual fetch loading states for the API calls.
-      try {
-        await Promise.all([
-          fetchConversations(),
-          fetchCounselors()
-        ]);
-      } catch (error) {
-        console.error("Error loading initial data:", error);
-      }
-    };
+    const token = localStorage.getItem("token");
     
-    loadData();
+    // Only fetch data if token exists (user is authenticated)
+    if (token) {
+      const loadData = async () => {
+        // setLoading(true) is already handled by individual fetch functions, but this handles the collective loading state.
+        // We can simplify this a bit since the individual functions already set loading.
+        // Let's keep it simple and rely on the individual fetch loading states for the API calls.
+        try {
+          await Promise.all([
+            fetchConversations(),
+            fetchCounselors()
+          ]);
+        } catch (error) {
+          console.error("Error loading initial data:", error);
+        }
+      };
+      
+      loadData();
+    }
     // fetchConversations and fetchCounselors are now memoized with useCallback, 
     // so they are stable and won't trigger the useEffect on every render.
   }, [fetchConversations, fetchCounselors]); 

@@ -222,6 +222,7 @@ function CenterInput({
 }
 
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { useChat } from "@/components/chat/context";
 
@@ -229,6 +230,19 @@ export default function ChatPage() {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [view, setView] = useState<"ai" | "counselor">("ai");
+  
+  const searchParams = useSearchParams();
+
+  // Update the view based on URL query parameters, if available
+  useEffect(() => {
+    const viewType = searchParams.get('view');
+    if (viewType === 'counselor') {
+      setView('counselor');
+    } else {
+      setView('ai'); // default to AI if no parameter or parameter is 'ai'
+    }
+  }, [searchParams]);
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeCounselor, setActiveCounselor] = useState<Counselor | null>(
@@ -353,7 +367,10 @@ export default function ChatPage() {
       <div className="flex justify-center pt-4 pb-2 mt-20 relative z-10">
         <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
           <button
-            onClick={() => setView("ai")}
+            onClick={() => {
+              setView("ai");
+              router.push('?');
+            }}
             className={[
               "rounded-full px-6 py-2 text-sm font-medium transition-all duration-200",
               view === "ai"
@@ -367,7 +384,10 @@ export default function ChatPage() {
             </div>
           </button>
           <button
-            onClick={() => setView("counselor")}
+            onClick={() => {
+              setView("counselor");
+              router.push('?view=counselor');
+            }}
             className={[
               "rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 flex items-center gap-2",
               view === "counselor"
