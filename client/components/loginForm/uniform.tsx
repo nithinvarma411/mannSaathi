@@ -45,8 +45,8 @@ const Uniform: React.FC = () => {
     e.preventDefault();
 
     const endpoint = isLogin
-      ? "http://localhost:4000/api/uni-admin/login"
-      : "http://localhost:4000/api/uni-admin/initiate";
+      ? "http://localhost:8080/api/uni-admin/login"
+      : "http://localhost:8080/api/uni-admin/initiate";
 
     const body = isLogin
       ? { email, password, university: selectedUniversity }

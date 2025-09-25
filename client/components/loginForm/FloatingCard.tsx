@@ -10,12 +10,12 @@ interface FloatingCardProps {
 
 const FloatingCard: React.FC<FloatingCardProps> = ({ children, leftType = "icons" }) => {
   return (
-    <div className="min-h-screen bg-black flex justify-center items-center font-sans p-4">
-      <div className="floating-card rounded-4xl w-290 h-190 max-w-full shadow-2xl transition-all duration-300 ease-out relative overflow-hidden">
+    <div className="min-h-screen bg-gray-800 lg:bg-black flex justify-center items-center font-sans p-4">
+      <div className="floating-card lg:rounded-4xl  w-full lg:w-290 h-190 max-w-full  transition-all duration-300 ease-out relative overflow-hidden">
         {/* Main Content Area - 60:40 Split */}
         <div className="flex h-full">
           {/* Left Section - 60% */}
-          <div className="hidden md:block w-3/5 bg-white/20 backdrop-blur-sm flex flex-col justify-center">
+          <div className="hidden md:flex w-3/5 bg-white/20 backdrop-blur-sm flex-col justify-center">
             {leftType === "image" ? <ImageFaderTransition /> : <FloatingIcons />}
           </div>
           {/* Right Section - 40% */}

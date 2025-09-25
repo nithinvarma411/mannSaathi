@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { User } from "../models/User";
 import { z } from "zod";
-import { initiateUniAdmin, verifyOtpAndCreateUniAdmin } from "../services/uni-admin.service";
+import { initiateUniAdmin, loginUser, verifyOtpAndCreateUniAdmin } from "../services/uni-admin.service";
 
 /** Step 1: Send OTP for Uni-Admin setup */
 export async function initiateUniAdminController(req: FastifyRequest, reply: FastifyReply) {
@@ -33,6 +33,23 @@ export async function verifyUniAdminController(req: FastifyRequest, reply: Fasti
     }).parse(req.body);
 
     const res = await verifyOtpAndCreateUniAdmin(body.email, body.otp, body.password);
+    console.log(res);
+    
+
+    return reply.code(res.statusCode).send(res);
+  } catch (err: any) {
+    console.error(`Error in uni-admin.controller.ts -> verifyUniAdminController: ${err.message}`);
+    return reply.code(500).send({ error: "Internal Server Error" });
+  }
+}
+export async function loginUniAdmin(req: FastifyRequest, reply: FastifyReply) {
+  try {
+    const body = z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+    }).parse(req.body);
+
+    const res = await loginUser(body.email, body.password);
     console.log(res);
     
 
