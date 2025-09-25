@@ -1,0 +1,19 @@
+meta {
+  name: university-apply
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:4000/api/university/apply
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "aisheCode": "U-0379",
+    "contactEmail": "mantena.nithinvarma.s65@kalvium.community",
+    "contactPhone": "9032149034"
+  }
+}

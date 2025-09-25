@@ -1,0 +1,15 @@
+meta {
+  name: delete-review
+  type: http
+  seq: 17
+}
+
+delete {
+  url: http://localhost:4000/api/review/delete-review?reviewId=68d4c9f27345d8c4c2272e9d
+  body: none
+  auth: inherit
+}
+
+params:query {
+  reviewId: 68d4c9f27345d8c4c2272e9d
+}

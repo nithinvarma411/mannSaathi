@@ -1,0 +1,19 @@
+meta {
+  name: upload-csv
+  type: http
+  seq: 9
+}
+
+post {
+  url: localhost:4000/api/university/:uniId/users/upload
+  body: multipartForm
+  auth: inherit
+}
+
+params:path {
+  uniId: 68b9d317e2bdeda336f843e9
+}
+
+body:multipart-form {
+  : @file(users.csv)
+}

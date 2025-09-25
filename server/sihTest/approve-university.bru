@@ -1,0 +1,19 @@
+meta {
+  name: approve-university
+  type: http
+  seq: 4
+}
+
+post {
+  url: localhost:4000/api/admin/university/:id/approve
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 68b95703659ada48e4530271
+}
+
+body:json {
+  {}
+}

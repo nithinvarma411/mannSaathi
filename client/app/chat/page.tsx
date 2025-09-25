@@ -192,15 +192,21 @@ function CenterInput({
   );
 }
 
+import { useRouter } from "next/navigation";
+import { ConversationList } from "@/components/chat/conversation-list";
+import { useChat } from "@/components/chat/context";
+
 export default function ChatPage() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [view, setView] = useState<"ai" | "history">("ai");
+  const [view, setView] = useState<"ai" | "counselor" | "history">("ai");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeCounselor, setActiveCounselor] = useState<Counselor | null>(
     null,
   );
+  const router = useRouter();
+  const { conversations } = useChat();
 
   const bottomInputRef = useRef<HTMLInputElement | null>(null);
   const centerInputRef = useRef<HTMLInputElement | null>(null);
@@ -301,15 +307,7 @@ export default function ChatPage() {
   };
 
   const handleSelectCounselor = (counselor: Counselor) => {
-    setView("ai");
-    setActiveCounselor(counselor);
-    const welcomeMsg: Message = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      text: `Hi! This is ${counselor.name}. I'm glad you reached out. How are you feeling today?`,
-      time: "Now",
-    };
-    setMessages([welcomeMsg]);
+    router.push(`/chat/${counselor.id}`);
   };
 
   return (
@@ -340,15 +338,18 @@ export default function ChatPage() {
             </div>
           </button>
           <button
-            onClick={() => setView("history")}
+            onClick={() => setView("counselor")}
             className={[
-              "rounded-full px-6 py-2 text-sm font-medium transition-all duration-200",
-              view === "history"
+              "rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 flex items-center gap-2",
+              view === "counselor"
                 ? "bg-gradient-to-r from-[#22D3EE]/20 to-[#60A5FA]/20 text-slate-50 shadow-lg"
                 : "text-slate-300 hover:text-slate-200",
             ].join(" ")}
           >
-            {t("counselor_history")}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Counselor Chat
           </button>
         </div>
       </div>
@@ -360,6 +361,20 @@ export default function ChatPage() {
             items={COUNSELOR_HISTORY}
             onCounselorSelect={handleSelectCounselor}
           />
+        ) : view === "counselor" ? (
+          <div className="flex-1 p-8">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="text-xl font-semibold text-white mb-4 text-center">
+                Your Conversations
+              </h2>
+              <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5 overflow-hidden">
+                <ConversationList />
+              </div>
+              <div className="mt-4 text-center text-slate-400 text-sm">
+                Start a conversation by selecting a counselor from the list above
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             {/* If there are no messages show center input and welcome */}

@@ -1,0 +1,19 @@
+meta {
+  name: decline-university
+  type: http
+  seq: 5
+}
+
+post {
+  url: localhost:4000/api/admin/university/:id/decline
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 68d0c7dbcf5bed13b9e80a39
+}
+
+body:json {
+  {}
+}
