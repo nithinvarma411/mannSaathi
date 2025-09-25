@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ProfileIcon } from "@/components/profile/icon";
 import LanguageSelector from "@/components/ui/language-selector";
@@ -28,7 +28,16 @@ const items = [
 export function TopNav() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
@@ -39,7 +48,7 @@ export function TopNav() {
             const active = pathname === i.href;
             const Icon = i.icon;
             return (
-              <li key={i.href}>
+              <li key={`desktop-${i.href}`}>
                 <Link
                   href={i.href}
                   className={cn(
@@ -72,6 +81,7 @@ export function TopNav() {
             className="flex items-center justify-center w-10 h-10 rounded-xl text-[#E5E7EB]/70 hover:text-[#E5E7EB] hover:bg-[#1E293B]/80 transition-all duration-200 active:scale-95"
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
+            suppressHydrationWarning
           >
             <motion.div
               animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
@@ -102,7 +112,7 @@ export function TopNav() {
                     const active = pathname === i.href;
                     const Icon = i.icon;
                     return (
-                      <li key={i.href}>
+                      <li key={`mobile-${i.href}`}>
                         <Link
                           href={i.href}
                           onClick={() => setIsMobileMenuOpen(false)}
