@@ -3,7 +3,8 @@ import {
   initiateUniAdminController,
   verifyUniAdminController,
   listCounsellorsController,
-  searchUserByUidController
+  searchUserByUidController,
+  loginUniAdmin
 } from "../controllers/uni-admin.controller";
 import { requireUserAuth } from "../middlewares/auth";
 import { requireRole } from "../middlewares/roles";
@@ -11,6 +12,7 @@ import { requireRole } from "../middlewares/roles";
 export default async function uniAdminRoutes(app: FastifyInstance) {
   app.post("/api/uni-admin/initiate", initiateUniAdminController);
   app.post("/api/uni-admin/verify", verifyUniAdminController);
+  app.post("/api/uni-admin/login", loginUniAdmin);
 
   // Only Uni-Admins can access this
   app.get(
