@@ -4,8 +4,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Search, User, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { TopNav } from '@/components/nav/top-nav';
 import { ProfileIcon } from '@/components/profile/icon';
-import LanguageSelector from '@/components/ui/language-selector';
-import { useLanguage } from '@/components/ui/language-context';
 
 interface Person {
   id: string;
@@ -64,7 +62,6 @@ const mockData: Person[] = [
 ];
 
 export default function ReportPage() {
-  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'student' | 'counselor'>('all');
@@ -124,16 +121,13 @@ export default function ReportPage() {
            <div className="hidden lg:block absolute right-5 top-5 ">
         <ProfileIcon />
       </div>
-           <div className="hidden lg:block absolute right-20 top-5 ">
-        <LanguageSelector />
-      </div>
         </div>
 
         {/* Page container */}
         <div className="relative z-10 mx-auto w-full max-w-6xl px-3 sm:px-4 pb-16 sm:pb-20">
           <div className="mb-6 sm:mb-8 pt-20 sm:pt-16">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">{t("reports")}</h1>
-            <p className="text-sm sm:text-base text-slate-300">{t("reports_description")}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">Reports</h1>
+            <p className="text-sm sm:text-base text-slate-300">Search and view student and counselor information</p>
           </div>
 
           {/* Search Section */}
@@ -141,14 +135,14 @@ export default function ReportPage() {
             <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-3 sm:mb-4">
               <div className="flex-1">
                 <label htmlFor="search" className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
-                  {t("search_by_name_email")}
+                  Search by Name or Email
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
                   <input
                     id="search"
                     type="text"
-                    placeholder={t("enter_name_email")}
+                    placeholder="Enter name or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400/30 text-slate-100 placeholder:text-slate-500 text-sm sm:text-base"
@@ -158,7 +152,7 @@ export default function ReportPage() {
 
               <div className="md:w-48">
                 <label htmlFor="type" className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
-                  {t("search_type")}
+                  Search Type
                 </label>
                 <select
                   id="type"
@@ -166,9 +160,9 @@ export default function ReportPage() {
                   onChange={(e) => setSearchType(e.target.value as 'all' | 'student' | 'counselor')}
                   className="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400/30 text-slate-100 text-sm sm:text-base"
                 >
-                  <option value="all" className="bg-black text-slate-100">{t("all")}</option>
-                  <option value="student" className="bg-black text-slate-100">{t("students")}</option>
-                  <option value="counselor" className="bg-black text-slate-100">{t("counselors")}</option>
+                  <option value="all" className="bg-black text-slate-100">All</option>
+                  <option value="student" className="bg-black text-slate-100">Students</option>
+                  <option value="counselor" className="bg-black text-slate-100">Counselors</option>
                 </select>
               </div>
             </div>
@@ -179,7 +173,7 @@ export default function ReportPage() {
             <div className="bg-white/5 border border-white/10 rounded-lg">
               <div className="p-3 sm:p-4 border-b border-white/10">
                 <h2 className="text-base sm:text-lg font-semibold text-slate-100">
-                  {t("search_results")} ({searchResults.length})
+                  Search Results ({searchResults.length})
                 </h2>
               </div>
 

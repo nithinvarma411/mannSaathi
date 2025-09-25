@@ -44,11 +44,11 @@ import {
   Trash2,
   Star,
   Maximize2,
+  Upload,
 } from "lucide-react";
 import { ProfileIcon } from "../../../components/profile/icon";
 import { CounselorDetailsModal } from "@/components/dashboard/counselor-details-modal";
-import LanguageSelector from "@/components/ui/language-selector";
-import { useLanguage } from "@/components/ui/language-context";
+import Link from "next/link";
 
 // Mock data for the dashboard
 const overviewMetrics = {
@@ -424,7 +424,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function CollegeDashboardPage() {
-  const { t } = useLanguage();
   const COLORS = ["#60A5FA", "#22D3EE", "#34D399", "#FBBF24", "#F87171"];
   const [isStressModalOpen, setIsStressModalOpen] = useState(false);
   const [selectedCounselor, setSelectedCounselor] = useState(null);
@@ -470,10 +469,24 @@ export default function CollegeDashboardPage() {
                <div className="hidden lg:block absolute right-5 top-5 ">
                 <ProfileIcon />
                 </div>
-               <div className="hidden lg:block absolute right-20 top-5 ">
-                <LanguageSelector />
-                </div>
             </div>
+          </div>
+
+          {/* Data Upload Link */}
+          <div className="mt-3 sm:mt-4">
+            <Link href="/data">
+              <div className="rounded-xl sm:rounded-2xl border border-white/20 bg-black p-3 sm:p-4 transition-all hover:bg-white/7 hover:-translate-y-0.5 cursor-pointer">
+                <div className="flex items-center">
+                  <div className="rounded-lg bg-[#22D3EE]/20 p-2 sm:p-3">
+                    <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-[#22D3EE]" />
+                  </div>
+                  <div className="ml-3 sm:ml-4">
+                    <h3 className="font-medium text-slate-100 text-sm sm:text-base">Upload Your Students Data</h3>
+                    <p className="text-xs sm:text-sm text-slate-500">Import students and counselors from CSV files</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
           </div>
 
           {/* Overview Metrics Grid */}

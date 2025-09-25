@@ -26,8 +26,8 @@ type Resource = {
 const INITIAL_RESOURCES: Resource[] = [
   {
     id: "r1",
-    title: "resource_breathing_title",
-    description: "resource_breathing_desc",
+    title: "Breathing Techniques for Anxiety",
+    description: "Learn simple breathing exercises to calm your mind and reduce anxiety in stressful situations.",
     category: "Mindfulness",
     format: "Guide",
     popularity: 98,
@@ -36,8 +36,8 @@ const INITIAL_RESOURCES: Resource[] = [
   },
   {
     id: "r2",
-    title: "resource_restructuring_title",
-    description: "resource_restructuring_desc",
+    title: "Cognitive Restructuring Worksheet",
+    description: "Challenge negative thought patterns and develop healthier thinking habits with this practical worksheet.",
     category: "Depression",
     format: "Worksheet",
     popularity: 87,
@@ -45,8 +45,8 @@ const INITIAL_RESOURCES: Resource[] = [
   },
   {
     id: "r3",
-    title: "resource_sleep_title",
-    description: "resource_sleep_desc",
+    title: "Sleep Hygiene Guide",
+    description: "Improve your sleep quality with evidence-based tips and create a healthy bedtime routine.",
     category: "Sleep",
     format: "Article",
     popularity: 76,
@@ -55,8 +55,8 @@ const INITIAL_RESOURCES: Resource[] = [
   },
   {
     id: "r4",
-    title: "resource_bodyscan_title",
-    description: "resource_bodyscan_desc",
+    title: "Body Scan Meditation",
+    description: "A guided meditation to help you relax your body and mind through progressive muscle relaxation.",
     category: "Mindfulness",
     format: "Video",
     popularity: 65,
@@ -64,8 +64,8 @@ const INITIAL_RESOURCES: Resource[] = [
   },
   {
     id: "r5",
-    title: "resource_grounding_title",
-    description: "resource_grounding_desc",
+    title: "Grounding Techniques",
+    description: "Quick and effective techniques to help you stay present and manage overwhelming emotions.",
     category: "Anxiety",
     format: "Guide",
     popularity: 92,
@@ -74,8 +74,8 @@ const INITIAL_RESOURCES: Resource[] = [
   },
   {
     id: "r6",
-    title: "resource_focus_title",
-    description: "resource_focus_desc",
+    title: "Focus and Productivity Tips",
+    description: "Strategies to improve concentration and maintain productivity while managing stress and distractions.",
     category: "Productivity",
     format: "Worksheet",
     popularity: 58,
@@ -201,7 +201,7 @@ export default function ResourcesPage() {
                 id="resource-search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("search_resources")}
+                placeholder="Search resources..."
                 className={cn(
                   "w-full rounded-full bg-white/5 border border-white/10",
                   "px-4 sm:px-5 py-2.5 pr-10 sm:pr-12 text-sm sm:text-base",
@@ -245,7 +245,7 @@ export default function ResourcesPage() {
             >
               {/* Category */}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-slate-300 whitespace-nowrap">{t("category")}</span>
+                <span className="text-sm text-slate-300 whitespace-nowrap">Category</span>
                 <Select value={category} onValueChange={(v) => setCategory(v as CategoryFilter)}>
                   <SelectTrigger className="h-10 sm:h-9 rounded-full bg-white/5 border-white/10 px-3 hover:bg-white/7 transition-colors min-w-[120px]">
                     <SelectValue />
@@ -262,7 +262,7 @@ export default function ResourcesPage() {
 
               {/* Format */}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-slate-300 whitespace-nowrap">{t("format")}</span>
+                <span className="text-sm text-slate-300 whitespace-nowrap">Format</span>
                 <Select value={format} onValueChange={(v) => setFormat(v as FormatFilter)}>
                   <SelectTrigger className="h-10 sm:h-9 rounded-full bg-white/5 border-white/10 px-3 hover:bg-white/7 transition-colors min-w-[120px]">
                     <SelectValue />
@@ -279,13 +279,13 @@ export default function ResourcesPage() {
 
               {/* Sort */}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-slate-300 whitespace-nowrap">{t("sort")}</span>
+                <span className="text-sm text-slate-300 whitespace-nowrap">Sort</span>
                 <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
                   <SelectTrigger className="h-10 sm:h-9 rounded-full bg-white/5 border-white/10 px-3 hover:bg-white/7 transition-colors min-w-[120px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {([t("recommended"), t("most_popular"), t("newest")] as SortOption[]).map((s) => (
+                    {(["Recommended", "Most Popular", "Newest"] as SortOption[]).map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>
@@ -318,7 +318,7 @@ export default function ResourcesPage() {
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base sm:text-lg font-medium leading-6 text-slate-100 pr-2">{t(r.title)}</h3>
+                        <h3 className="text-base sm:text-lg font-medium leading-6 text-slate-100 pr-2">{r.title}</h3>
                         <Button
                           aria-label={savedIds.includes(r.id) ? "Unsave" : "Save"}
                           onClick={() => toggleSave(r.id)}
@@ -347,11 +347,11 @@ export default function ResourcesPage() {
                         </Button>
                       </div>
 
-                      <p className="mt-2 sm:mt-3 text-sm text-slate-300 line-clamp-2">{t(r.description)}</p>
+                      <p className="mt-2 sm:mt-3 text-sm text-slate-300 line-clamp-2">{r.description}</p>
 
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <span className="inline-flex items-center rounded-full bg-white/5 border border-white/10 px-2.5 py-1 text-xs text-slate-100">
-                          {t(`category_${r.category.toLowerCase()}`)}
+                          {r.category}
                         </span>
 
                         <Button
@@ -364,7 +364,7 @@ export default function ResourcesPage() {
                             "bg-gradient-to-r from-[#22D3EE] to-[#60A5FA] text-slate-900 hover:from-[#22D3EE]/90 hover:to-[#60A5FA]/90 transition",
                           )}
                         >
-                          {t("view_resource")}
+                          View Resource
                         </Button>
                       </div>
                     </motion.article>
@@ -386,8 +386,8 @@ export default function ResourcesPage() {
                     alt="No results illustration"
                     className="mx-auto opacity-80"
                   />
-                  <h3 className="mt-6 text-lg font-medium text-slate-100">{t("no_results_found")}</h3>
-                  <p className="mt-1 text-slate-300">{t("try_adjusting_filters")}</p>
+                  <h3 className="mt-6 text-lg font-medium text-slate-100">No results found</h3>
+                  <p className="mt-1 text-slate-300">Try adjusting your search or filters</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -404,7 +404,7 @@ export default function ResourcesPage() {
                 aria-controls="quick-access-panel"
                 variant="outline"
               >
-                {showQuickMobile ? t("hide") : t("show")} {t("quick_access")}
+                {showQuickMobile ? "Hide" : "Show"} Quick Access
               </Button>
             </div>
 
@@ -416,12 +416,12 @@ export default function ResourcesPage() {
                 showQuickMobile && "block lg:block",
               )}
             >
-              <SectionBlock title={t("featured_guides")}>
+              <SectionBlock title="Featured Guides">
                 <ul className="space-y-2 sm:space-y-3">
                   {featured.map((f) => (
                     <li key={f.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/7 transition-colors">
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-slate-100">{t(f.title)}</span>
+                        <span className="block truncate text-sm text-slate-100">{f.title}</span>
                       </div>
                       <Button
                         onClick={() => {
@@ -430,21 +430,21 @@ export default function ResourcesPage() {
                         variant="outline"
                         className="h-8 rounded-full bg-white/5 border-white/10 px-3 text-xs hover:bg-white/10 whitespace-nowrap text-slate-100"
                       >
-                        {t("open")}
+                        Open
                       </Button>
                     </li>
                   ))}
                 </ul>
               </SectionBlock>
 
-              <SectionBlock title={t("recently_viewed")}>
+              <SectionBlock title="Recently Viewed">
                 {recent.length === 0 ? (
-                  <p className="text-sm text-slate-300">{t("nothing_yet")}</p>
+                  <p className="text-sm text-slate-300">Nothing yet</p>
                 ) : (
                   <ul className="space-y-2">
                     {recent.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-slate-100 truncate pr-2">{t(r.title)}</span>
+                        <span className="text-sm text-slate-100 truncate pr-2">{r.title}</span>
                         <Button
                           onClick={() => {
                             markViewed(r.id)
@@ -452,7 +452,7 @@ export default function ResourcesPage() {
                           variant="outline"
                           className="h-8 rounded-full bg-white/5 border-white/10 px-3 text-xs hover:bg-white/10 text-slate-100 shrink-0"
                         >
-                          {t("open")}
+                          Open
                         </Button>
                       </li>
                     ))}
@@ -460,20 +460,20 @@ export default function ResourcesPage() {
                 )}
               </SectionBlock>
 
-              <SectionBlock title={t("saved_resources")}>
+              <SectionBlock title="Saved Resources">
                 {saved.length === 0 ? (
-                  <p className="text-sm text-slate-300">{t("nothing_saved")}</p>
+                  <p className="text-sm text-slate-300">Nothing saved yet</p>
                 ) : (
                   <ul className="space-y-2">
                     {saved.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-slate-100 truncate pr-2">{t(r.title)}</span>
+                        <span className="text-sm text-slate-100 truncate pr-2">{r.title}</span>
                         <Button
                           onClick={() => toggleSave(r.id)}
                           variant="outline"
                           className="h-8 rounded-full bg-white/5 border-white/10 px-3 text-xs hover:bg-white/10 text-slate-100 shrink-0"
                         >
-                          {t("remove")}
+                          Remove
                         </Button>
                       </li>
                     ))}

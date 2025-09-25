@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { ProfileIcon } from "@/components/profile/icon"
+import LanguageSelector from "@/components/ui/language-selector"
 import { useLanguage } from "@/components/ui/language-context"
 
 export default function ProfilePage() {
@@ -34,9 +35,10 @@ export default function ProfilePage() {
           <p className="text-sm md:text-base text-slate-400">{t('profile_manage_personal_info')}</p>
         </header>
 
-         <div className="hidden lg:block absolute right-5 top-5 ">
-        <ProfileIcon />
-      </div>
+        <div className="hidden lg:flex absolute right-5 top-5 items-center gap-3">
+          <LanguageSelector />
+          <ProfileIcon />
+        </div>
 
   <section className="rounded-lg md:rounded-2xl border border-white/20 bg-black p-4 md:p-5 backdrop-blur-md">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">

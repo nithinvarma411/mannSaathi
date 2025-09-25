@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ProfileIcon } from "@/components/profile/icon"
+import LanguageSelector from "@/components/ui/language-selector"
 import { useLanguage } from "@/components/ui/language-context"
 
 type Notification = {
@@ -63,7 +64,8 @@ export default function NotificationsPage() {
       />
       
       <TopNav />
-       <div className="hidden lg:block absolute right-5 top-5 ">
+      <div className="hidden lg:flex absolute right-5 top-5 items-center gap-3">
+        <LanguageSelector />
         <ProfileIcon />
       </div>
       <div className="mx-auto max-w-3xl px-3 sm:px-4 pt-12 sm:pt-6 pb-20 sm:pb-24 relative z-10">
