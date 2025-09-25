@@ -30,7 +30,8 @@ export default function ChatWithCounselor() {
   const { conversations, messages, setMessages, loading, sendMessage, fetchMessages, fetchConversations, counselors } = useChat();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false); // For message sending state
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Track initial load
   const [view, setView] = useState<"ai" | "counselor">("counselor");
   const searchParams = useSearchParams();
   const [counselorName, setCounselorName] = useState<string>("Counselor");
@@ -52,16 +53,10 @@ export default function ChatWithCounselor() {
   // Fetch messages and counselor info when component mounts or id changes
   useEffect(() => {
     if (id) {
-      fetchMessages(id as string).then(() => {
-        // Convert fetched messages to the format expected by this UI
-        const convertedMessages: Message[] = messages.map(msg => ({
-          id: msg._id,
-          role: msg.senderId._id === localStorage.getItem("userId") ? "user" : "assistant",
-          text: msg.message,
-          time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        }));
-        setLocalMessages(convertedMessages);
-      });
+      // Set loading when switching conversations
+      setIsInitialLoading(true);
+      
+      fetchMessages(id as string);
       
       // Find counselor name from the counselors list
       const counselor = counselors.find(c => c._id === id);
@@ -69,15 +64,49 @@ export default function ChatWithCounselor() {
         setCounselorName(counselor.name);
       } else {
         // If not in cache, fetch counselors
-        fetchConversations().then(() => {
-          const c = counselors.find(c => c._id === id);
-          if (c) {
-            setCounselorName(c.name);
-          }
-        });
+        fetchConversations();
       }
     }
-  }, [id, fetchMessages, fetchConversations, counselors, messages]);
+  }, [id, fetchMessages, fetchConversations, counselors]);
+
+  // Complete loading when data is ready
+  useEffect(() => {
+    if (id && !loading) {
+      // Small delay to prevent flash, then fade in content
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, id]);
+
+  // Sync context messages with local messages
+  useEffect(() => {
+    if (id) {
+      // Get current user ID from token payload or localStorage
+      const token = localStorage.getItem("token");
+      let currentUserId = localStorage.getItem("userId");
+      
+      // If we don't have userId in localStorage, try to extract from token
+      if (!currentUserId && token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          currentUserId = payload.userId || payload.sub; // Common JWT payload fields
+        } catch (e) {
+          console.error("Failed to extract userId from token", e);
+        }
+      }
+      
+      const convertedMessages: Message[] = messages.map(msg => ({
+        id: msg._id,
+        role: msg.senderId._id === currentUserId ? "user" : "assistant",
+        text: msg.message,
+        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      }));
+      setLocalMessages(convertedMessages);
+    }
+  }, [messages, id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -99,7 +128,7 @@ export default function ChatWithCounselor() {
   }, [localMessages.length]);
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || loading) return;
 
     const now = new Date();
     const time = now.toLocaleTimeString([], {
@@ -107,7 +136,7 @@ export default function ChatWithCounselor() {
       minute: "2-digit",
     });
 
-    // Add user message
+    // Add user message to local state immediately for better UX
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -117,27 +146,18 @@ export default function ChatWithCounselor() {
 
     setLocalMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setIsLoading(true);
+    setIsSending(true);
 
     // Send the message to the API
-    const result = await sendMessage(id as string, text.trim());
-    
-    if (result) {
-      // Add the response to the local messages
-      const assistantMsg: Message = {
-        id: result._id || crypto.randomUUID(),
-        role: "assistant",
-        text: result.message,
-        time: new Date(result.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      
-      setLocalMessages((prev) => [...prev, assistantMsg]);
+    try {
+      const result = await sendMessage(id as string, text.trim());
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    } finally {
+      setIsSending(false);
     }
-
-    setIsLoading(false);
+    
+    // The messages will be automatically synced via the effect that watches context messages
   };
 
   const handleSubmitCenter = (e: React.FormEvent) => {
@@ -192,7 +212,7 @@ export default function ChatWithCounselor() {
             ].join(" ")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             {counselorName}
           </button>
@@ -215,8 +235,20 @@ export default function ChatWithCounselor() {
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10">
         {view === "counselor" ? (
           <>
-            {/* If there are no messages show center input and welcome */}
-            {localMessages.length === 0 ? (
+            {/* Simple loading overlay - much cleaner */}
+            {isInitialLoading && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+                  <p className="text-slate-300 text-sm">Loading conversation...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Content with fade-in animation */}
+            <div className={`flex-1 flex flex-col transition-opacity duration-300 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
+              {localMessages.length === 0 ? (
+              /* Show empty state when no messages exist yet */
               <div className="flex-1 flex items-center justify-center p-8">
                 <div className="w-full max-w-2xl text-center">
                   <div className="mb-6">
@@ -250,12 +282,12 @@ export default function ChatWithCounselor() {
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Ask Anything"
                         className="flex-1 bg-transparent text-slate-200 placeholder-slate-400 outline-none text-base"
-                        disabled={isLoading}
+                        disabled={isSending}
                         autoFocus
                       />
                       <button
                         type="submit"
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() || isSending}
                         className="p-2 rounded-xl bg-gradient-to-r from-[#460075] to-[#0955b2] text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                         aria-label="Send message"
                       >
@@ -277,98 +309,99 @@ export default function ChatWithCounselor() {
                   </div>
                 </div>
               </div>
-            ) : (
-              // Messages list with bottom input
-              <div className="flex-1 flex flex-col">
-                <div
-                  ref={scrollContainerRef}
-                  className="flex-1 overflow-y-auto px-4 py-6"
-                >
-                  <div className="max-w-3xl mx-auto space-y-6">
-                    {localMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                      >
+              ) : (
+                // Messages list with bottom input
+                <div className="flex-1 flex flex-col">
+                  <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-y-auto px-4 py-6"
+                  >
+                    <div className="max-w-3xl mx-auto space-y-6">
+                      {localMessages.map((msg) => (
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                            msg.role === "user"
-                              ? "bg-slate-700 text-white"
-                              : "bg-white/10 text-slate-200 border border-white/10"
-                          }`}
+                          key={msg.id}
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {msg.text}
-                          </p>
-                          {msg.time && (
-                            <span
-                              className={`text-xs mt-2 block ${
-                                msg.role === "user"
-                                  ? "text-white/70"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              {msg.time}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-white/10 text-slate-200 border border-white/10 rounded-2xl px-4 py-3">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                            <div
-                              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
+                          <div
+                            className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                              msg.role === "user"
+                                ? "bg-slate-700 text-white"
+                                : "bg-white/10 text-slate-200 border border-white/10"
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                              {msg.text}
+                            </p>
+                            {msg.time && (
+                              <span
+                                className={`text-xs mt-2 block ${
+                                  msg.role === "user"
+                                    ? "text-white/70"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                {msg.time}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ))}
 
-                    <div ref={messagesEndRef} />
+                      {isSending && (
+                        <div className="flex justify-start">
+                          <div className="bg-white/10 text-slate-200 border border-white/10 rounded-2xl px-4 py-3">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                              <div
+                                className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "0.1s" }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+                                style={{ animationDelay: "0.2s" }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </div>
+
+                  {/* Bottom Input - moves here after first message */}
+                  <div className=" backdrop-blur-sm px-5">
+                    <div className="max-w-3xl mx-auto py-4">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const val = bottomInputRef.current?.value || "";
+                          handleSend(val);
+                        }}
+                      >
+                        <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
+                          <input
+                            ref={bottomInputRef}
+                            defaultValue=""
+                            placeholder="Ask Anything"
+                            className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
+                            disabled={isSending}
+                          />
+                          <button
+                            type="submit"
+                            disabled={isSending}
+                            className="p-2 rounded-xl bg-blue-800 text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                            aria-label="Send message"
+                          >
+                            <Send size={18} />
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </div>
-
-                {/* Bottom Input - moves here after first message */}
-                <div className=" backdrop-blur-sm px-5">
-                  <div className="max-w-3xl mx-auto py-4">
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const val = bottomInputRef.current?.value || "";
-                        handleSend(val);
-                      }}
-                    >
-                      <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
-                        <input
-                          ref={bottomInputRef}
-                          defaultValue=""
-                          placeholder="Ask Anything"
-                          className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
-                          disabled={isLoading}
-                        />
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="p-2 rounded-xl bg-blue-800 text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                          aria-label="Send message"
-                        >
-                          <Send size={18} />
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
           // AI Tab Content (same as main chat page)
@@ -405,12 +438,12 @@ export default function ChatWithCounselor() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask Anything"
                     className="flex-1 bg-transparent text-slate-200 placeholder-slate-400 outline-none text-base"
-                    disabled={isLoading}
+                    disabled={isSending}
                     autoFocus
                   />
                   <button
                     type="submit"
-                    disabled={!input.trim() || isLoading}
+                    disabled={!input.trim() || isSending}
                     className="p-2 rounded-xl bg-gradient-to-r from-[#460075] to-[#0955b2] text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                     aria-label="Send message"
                   >
