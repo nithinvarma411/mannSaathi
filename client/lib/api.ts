@@ -36,6 +36,14 @@ export interface Conversation {
   lastMessageAt: string;
 }
 
+export interface Counselor {
+  _id: string;
+  name: string;
+  role: string;
+  avgRating?: number;
+  ratingCount?: number;
+}
+
 // Function to get headers including authentication
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = {
@@ -115,6 +123,28 @@ export async function getConversations(): Promise<Conversation[] | null> {
   } catch (error) {
     console.error("Error fetching conversations:", error);
     toast.error(error instanceof Error ? error.message : "Error fetching conversations");
+    return null;
+  }
+}
+
+// Function to get all counselors
+export async function getCounselors(): Promise<Counselor[] | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat/counselors`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to fetch counselors");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching counselors:", error);
+    toast.error(error instanceof Error ? error.message : "Error fetching counselors");
     return null;
   }
 }

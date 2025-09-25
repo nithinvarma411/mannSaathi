@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
-import { ChatMessage, Conversation } from "@/lib/api";
+import { ChatMessage, Conversation, Counselor, getCounselors as getCounselorsApi } from "@/lib/api";
 import { getConversations, getMessages, sendMessage as sendApiMessage } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -13,9 +13,12 @@ type ChatContextType = {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   loading: boolean;
+  counselors: Counselor[];
+  setCounselors: React.Dispatch<React.SetStateAction<Counselor[]>>;
   fetchConversations: () => Promise<void>;
   fetchMessages: (userId: string) => Promise<void>;
   sendMessage: (receiverId: string, message: string) => Promise<ChatMessage | null>;
+  fetchCounselors: () => Promise<void>;
 };
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -25,6 +28,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [counselors, setCounselors] = useState<Counselor[]>([]);
 
   // Fetch conversations for the current user
   const fetchConversations = async () => {
@@ -84,6 +88,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return newMessage;
   };
 
+  // Function to fetch counselors
+  const fetchCounselors = async () => {
+    setLoading(true);
+    try {
+      const data = await getCounselorsApi();
+      if (data) {
+        setCounselors(data);
+      }
+    } catch (error) {
+      console.error("Error fetching counselors:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load conversations on initial load
   useEffect(() => {
     fetchConversations();
@@ -104,9 +123,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     messages,
     setMessages,
     loading,
+    counselors,
+    setCounselors,
     fetchConversations,
     fetchMessages,
     sendMessage,
+    fetchCounselors,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

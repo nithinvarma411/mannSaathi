@@ -36,7 +36,47 @@ The chat API requires JWT authentication. You need to include the JWT token in a
 
 ## API Endpoints
 
-### 1. Send Message
+### 1. Get Counselors
+- **Method**: GET
+- **URL**: `/api/chat/counselors`
+- **Description**: Retrieves a list of all counselors available for chat
+
+#### Example Request
+```
+GET http://localhost:8080/api/chat/counselors
+Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Example Response
+```json
+{
+  "data": [
+    {
+      "_id": "68be5f9264c3d8d57bcb26b0",
+      "name": "Jane Smith",
+      "role": "counsellor",
+      "avgRating": 0,
+      "ratingCount": 0
+    },
+    {
+      "_id": "68d21dc6f25b2ff618671c20",
+      "name": "Ankit",
+      "role": "counsellor",
+      "avgRating": 6,
+      "ratingCount": 3
+    },
+    {
+      "_id": "68d53bd773759f1224c7a5da",
+      "name": "Rohit Kumar",
+      "role": "counsellor",
+      "avgRating": 0,
+      "ratingCount": 0
+    }
+  ]
+}
+```
+
+### 2. Send Message
 - **Method**: POST
 - **URL**: `/api/chat/send-message`
 - **Description**: Sends a message to another user
@@ -81,7 +121,7 @@ Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
-### 2. Get Messages with a Specific User
+### 3. Get Messages with a Specific User
 - **Method**: GET
 - **URL**: `/api/chat/messages/:userId`
 - **Description**: Retrieves all messages between the authenticated user and the specified user
@@ -123,7 +163,7 @@ Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
-### 3. Get All Conversations for Current User
+### 4. Get All Conversations for Current User
 - **Method**: GET
 - **URL**: `/api/chat/conversations`
 - **Description**: Retrieves a list of all conversations for the authenticated user
@@ -155,7 +195,8 @@ Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## Testing with Bruno
 
 1. Create a new collection for your chat API tests
-2. Add three request folders:
+2. Add four request folders:
+   - `GET counselors`
    - `POST send-message`
    - `GET messages`
    - `GET conversations`
@@ -167,6 +208,7 @@ Cookie: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 1. Create a new Postman collection for your chat API tests
 2. Add the following requests:
+   - Get Counselors (GET)
    - Send Message (POST)
    - Get Messages (GET)
    - Get Conversations (GET)

@@ -15,36 +15,16 @@ type Message = {
 };
 
 type Counselor = {
-  id: string;
+  _id: string;
   name: string;
-  avatar?: string;
-  lastMessage: string;
-  lastSeen: string;
+  role: string;
+  avgRating?: number;
+  ratingCount?: number;
 };
 
-const COUNSELOR_HISTORY: Counselor[] = [
-  {
-    id: "c1",
-    name: "chat_counselor_maya",
-    avatar: "/counselor-avatar.png",
-    lastMessage: "chat_maya_message",
-    lastSeen: "chat_time_2h",
-  },
-  {
-    id: "c2",
-    name: "chat_counselor_alex",
-    avatar: "/counselor-avatar.png",
-    lastMessage: "chat_alex_message",
-    lastSeen: "chat_time_yesterday",
-  },
-  {
-    id: "c3",
-    name: "chat_counselor_priya",
-    avatar: "/counselor-avatar.png",
-    lastMessage: "chat_priya_message",
-    lastSeen: "chat_time_monday",
-  },
-];
+
+
+
 
 const SUGGESTED_PROMPTS = [
   "chat_prompt_anxious",
@@ -54,39 +34,84 @@ const SUGGESTED_PROMPTS = [
 ];
 
 function HistoryList({
-  items,
   onCounselorSelect,
 }: {
-  items: Counselor[];
-  onCounselorSelect: (counselor: Counselor) => void;
+  onCounselorSelect: (counselor: any) => void;
 }) {
   const { t } = useLanguage()
+  const { counselors, fetchCounselors, loading } = useChat();
+  
+  useEffect(() => {
+    fetchCounselors();
+  }, [fetchCounselors]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex flex-col items-center">
+          <div className="flex space-x-1 mb-4">
+            <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+          </div>
+          <p className="text-slate-400">Loading counselors...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (counselors.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-2xl text-center">
+          <h2 className="text-xl font-semibold text-white mb-4">
+            {t("counselors")}
+          </h2>
+          <div className="p-8 flex flex-col items-center justify-center text-center">
+            <div className="bg-white/10 p-4 rounded-full mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-1">No counselors available</h3>
+            <p className="text-slate-400 max-w-xs">
+              There are no counselors available at the moment. Please try again later.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="w-full max-w-2xl">
         <h2 className="text-xl font-semibold text-white mb-4 text-center">
-          {t("your_counselors")}
+          {t("counselors")}
         </h2>
         <ul className="flex flex-col divide-y divide-white/10 rounded-xl border border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5">
-          {items.map((c) => (
+          {counselors.map((counselor) => (
             <li
-              key={c.id}
+              key={counselor._id}
               className="flex items-center gap-4 p-4 transition-colors hover:bg-white/10 cursor-pointer"
-              onClick={() => onCounselorSelect(c)}
+              onClick={() => onCounselorSelect(counselor)}
               role="button"
-              aria-label={`Open chat with ${c.name}`}
+              aria-label={`Open chat with ${counselor.name}`}
               tabIndex={0}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onCounselorSelect(c);
+                if (e.key === "Enter" || e.key === " ") onCounselorSelect(counselor);
               }}
             >
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/10">
                 <img
-                  src={
-                    c.avatar ||
-                    "/placeholder.svg?height=48&width=48&query=counselor avatar"
-                  }
-                  alt={`${c.name} avatar`}
+                  src={`https://api.dicebear.com/6.x/initials/svg?seed=${counselor.name}`}
+                  alt={`${counselor.name} avatar`}
                   width={48}
                   height={48}
                   className="h-12 w-12 object-cover"
@@ -95,12 +120,16 @@ function HistoryList({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-base font-medium text-white">
-                    {t(c.name)}
+                    {counselor.name}
                   </p>
-                  <span className="text-sm text-slate-400">{t(c.lastSeen)}</span>
+                  {counselor.avgRating !== undefined && (
+                    <span className="text-sm text-slate-400">
+                      {counselor.avgRating}★ ({counselor.ratingCount})
+                    </span>
+                  )}
                 </div>
                 <p className="truncate text-sm text-slate-400">
-                  {t(c.lastMessage)}
+                  {counselor.role}
                 </p>
               </div>
             </li>
@@ -199,14 +228,14 @@ import { useChat } from "@/components/chat/context";
 export default function ChatPage() {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [view, setView] = useState<"ai" | "counselor" | "history">("ai");
+  const [view, setView] = useState<"ai" | "counselor">("ai");
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeCounselor, setActiveCounselor] = useState<Counselor | null>(
     null,
   );
   const router = useRouter();
-  const { conversations } = useChat();
+  const { conversations, counselors, fetchCounselors } = useChat();
 
   const bottomInputRef = useRef<HTMLInputElement | null>(null);
   const centerInputRef = useRef<HTMLInputElement | null>(null);
@@ -306,8 +335,8 @@ export default function ChatPage() {
     handleSend(suggestion);
   };
 
-  const handleSelectCounselor = (counselor: Counselor) => {
-    router.push(`/chat/${counselor.id}`);
+  const handleSelectCounselor = (counselor: any) => {
+    router.push(`/chat/${counselor._id}`);
   };
 
   return (
@@ -347,7 +376,7 @@ export default function ChatPage() {
             ].join(" ")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Counselor Chat
           </button>
@@ -356,25 +385,12 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10">
-        {view === "history" ? (
+        {view === "counselor" ? (
           <HistoryList
-            items={COUNSELOR_HISTORY}
-            onCounselorSelect={handleSelectCounselor}
+            onCounselorSelect={(counselor) => {
+              router.push(`/chat/${counselor._id}`);
+            }}
           />
-        ) : view === "counselor" ? (
-          <div className="flex-1 p-8">
-            <div className="max-w-2xl mx-auto">
-              <h2 className="text-xl font-semibold text-white mb-4 text-center">
-                Your Conversations
-              </h2>
-              <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/5 overflow-hidden">
-                <ConversationList />
-              </div>
-              <div className="mt-4 text-center text-slate-400 text-sm">
-                Start a conversation by selecting a counselor from the list above
-              </div>
-            </div>
-          </div>
         ) : (
           <>
             {/* If there are no messages show center input and welcome */}
@@ -461,7 +477,7 @@ export default function ChatPage() {
                       <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
                         <input
                           ref={bottomInputRef}
-                          defaultValue={""}
+                          defaultValue=""
                           placeholder="Ask Anything"
                           className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
                           disabled={isLoading}

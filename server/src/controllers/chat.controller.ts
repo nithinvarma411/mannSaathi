@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { Types } from "mongoose";
 import { sendMessage, getMessages, getUserConversations } from "../services/chat.service";
+import { User } from "../models/User";
 
 export async function sendMessageController(
   req: FastifyRequest,
@@ -82,6 +83,35 @@ export async function getUserConversationsController(
   } catch (err: any) {
     console.error(
       `Error in chat.controller.ts -> getUserConversationsController: ${err.message}`
+    );
+    return reply.code(500).send({ error: "Internal Server Error" });
+  }
+}
+
+export async function getAllCounselorsController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    // The current user ID comes from the JWT token
+    const currentUserId = req.user.sub;
+
+    // First, get the user to find their university
+    const user = await User.findById(currentUserId).select("universityId");
+    if (!user) {
+      return reply.code(404).send({ error: "User not found" });
+    }
+
+    // Get all counselors from the same university
+    const counselors = await User.find({
+      universityId: user.universityId,
+      role: "counsellor"
+    }).select("_id name role avgRating ratingCount");
+
+    return reply.code(200).send({ data: counselors });
+  } catch (err: any) {
+    console.error(
+      `Error in chat.controller.ts -> getAllCounselorsController: ${err.message}`
     );
     return reply.code(500).send({ error: "Internal Server Error" });
   }

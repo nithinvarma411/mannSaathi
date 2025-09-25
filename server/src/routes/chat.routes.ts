@@ -3,7 +3,8 @@ import { requireUserAuth } from "../middlewares/auth";
 import { 
   sendMessageController, 
   getMessagesController, 
-  getUserConversationsController 
+  getUserConversationsController,
+  getAllCounselorsController
 } from "../controllers/chat.controller";
 
 export default async function chatRoutes(app: FastifyInstance) {
@@ -19,6 +20,9 @@ export default async function chatRoutes(app: FastifyInstance) {
       
       // Get all conversations for the current user
       userScope.get("/conversations", getUserConversationsController);
+      
+      // Get all counselors in the user's university
+      userScope.get("/counselors", getAllCounselorsController);
     },
     { prefix: "/api/chat" }
   );
