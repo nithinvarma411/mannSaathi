@@ -42,13 +42,13 @@ export function Hero() {
             {/* Main brain container */}
             <div className="relative h-96 flex items-center justify-center">
               {/* Brain PNG illustration */}
-              <div className="relative w-72 h-72">
+              <div className="relative w-90 h-90 animate-float">
                 <img
                   src="/converted.png"
                   alt="Brain visualization with neon outline"
                   className="w-full h-full object-contain filter drop-shadow-lg"
                   style={{
-                    filter: 'drop-shadow(0 0 20px rgba(139, 92, 246, 0.5)) drop-shadow(0 0 40px rgba(236, 72, 153, 0.3))'
+                    filter: 'drop-shadow(0 0 60px rgba(139, 90, 246, 1)) drop-shadow(0 0 40px rgba(236, 72, 153, 0.3))'
                   }}
                 />
               </div>
