@@ -52,10 +52,29 @@ export async function loginUniAdmin(req: FastifyRequest, reply: FastifyReply) {
     const res = await loginUser(body.email, body.password);
     console.log(res);
     
+    if (!res.ok) {
+      return reply.code(res.statusCode).send(res);
+    }
 
-    return reply.code(res.statusCode).send(res);
+    // Set JWT token in cookie
+    const token = await reply.jwtSign(res.data.token, { expiresIn: "7d" });
+
+    reply.setCookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    return reply.code(res.statusCode).send({
+      message: res.message,
+      ok: res.ok,
+      token: token, // Include token in response body as well
+      data: res.data,
+    });
   } catch (err: any) {
-    console.error(`Error in uni-admin.controller.ts -> verifyUniAdminController: ${err.message}`);
+    console.error(`Error in uni-admin.controller.ts -> loginUniAdminController: ${err.message}`);
     return reply.code(500).send({ error: "Internal Server Error" });
   }
 }

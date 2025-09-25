@@ -13,14 +13,21 @@ import chatRoutes from './routes/chat.routes';
 export function buildApp() {
   const app = fastify({ logger: true });
 
-  // Enable CORS
-  app.register(cors, { origin: true, credentials: true });
+  // Enable CORS - Allow frontend origin to receive cookies
+  app.register(cors, { 
+    origin: [
+      'http://localhost:3000',    // Next.js dev server
+      'http://localhost:8080',    // API server (for direct API testing)
+      process.env.CLIENT_URL || 'http://localhost:3000'  // Production client URL if exists
+    ], 
+    credentials: true 
+  });
 
   // Enable cookies
   app.register(cookie, {
     parseOptions: {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",  // "none" for cross-site cookies in dev
       secure: process.env.NODE_ENV === 'production',
     },
   });

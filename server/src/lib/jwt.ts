@@ -10,6 +10,13 @@ export default fp(async (app) => {
       cookieName: "token",
       signed: false,
     },
+    // Add verify options to handle cookie verification
+    verify: {
+      clockTolerance: 30, // 30 seconds
+    },
+    decode: {
+      complete: true, // return full decoded token
+    }
   });
 
   // User authentication (students, counsellors, uni-admins all count as "users")

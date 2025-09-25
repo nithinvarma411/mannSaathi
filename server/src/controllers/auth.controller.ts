@@ -86,12 +86,22 @@ export async function loginController(
     reply.setCookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return reply.code(200).send({ message: "Login Successful", ok: true });
+    return reply.code(200).send({ 
+      message: "Login Successful", 
+      ok: true,
+      token: token, // Include token in response body as well
+      user: {
+        _id: res.user._id,
+        uid: res.user.uid,
+        role: res.user.role,
+        universityId: res.user.universityId
+      }
+    });
   } catch (err: any) {
     console.error(
       `Error in auth.controller.ts -> loginController: ${err.message}`

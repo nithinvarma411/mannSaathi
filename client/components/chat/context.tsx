@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from "react";
 import { ChatMessage, Conversation, Counselor, getCounselors as getCounselorsApi } from "@/lib/api";
 import { getConversations, getMessages, sendMessage as sendApiMessage } from "@/lib/api";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [counselors, setCounselors] = useState<Counselor[]>([]);
 
   // Fetch conversations for the current user
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getConversations();
@@ -43,10 +43,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Dependency array is empty as it doesn't rely on outside props/state.
 
   // Fetch messages with a specific user
-  const fetchMessages = async (userId: string) => {
+  const fetchMessages = useCallback(async (userId: string) => {
     setLoading(true);
     try {
       const data = await getMessages(userId);
@@ -58,10 +58,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Dependency array is empty as it doesn't rely on outside props/state.
 
   // Function to send a message and update conversation list
   const sendMessage = async (receiverId: string, message: string): Promise<ChatMessage | null> => {
+    // ... (rest of sendMessage is fine)
     const newMessage = await sendApiMessage({ receiverId, message });
     
     if (newMessage) {
@@ -88,8 +89,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return newMessage;
   };
 
-  // Function to fetch counselors
-  const fetchCounselors = async () => {
+  // Function to fetch counselors - **Wrapped in useCallback**
+  const fetchCounselors = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getCounselorsApi();
@@ -101,19 +102,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Dependency array is empty as it doesn't rely on outside props/state.
 
-  // Load conversations on initial load
+  // Load conversations and counselors on initial load
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    const loadData = async () => {
+      // setLoading(true) is already handled by individual fetch functions, but this handles the collective loading state.
+      // We can simplify this a bit since the individual functions already set loading.
+      // Let's keep it simple and rely on the individual fetch loading states for the API calls.
+      try {
+        await Promise.all([
+          fetchConversations(),
+          fetchCounselors()
+        ]);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      }
+    };
+    
+    loadData();
+    // fetchConversations and fetchCounselors are now memoized with useCallback, 
+    // so they are stable and won't trigger the useEffect on every render.
+  }, [fetchConversations, fetchCounselors]); 
 
   // If the active conversation changes, fetch messages for that user
   useEffect(() => {
     if (activeConversation) {
       fetchMessages(activeConversation.otherUser._id);
     }
-  }, [activeConversation]);
+  }, [activeConversation, fetchMessages]);
 
   const value = {
     conversations,

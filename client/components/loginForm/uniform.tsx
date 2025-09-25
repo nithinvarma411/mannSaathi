@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import FloatingCard from "./FloatingCard";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import apiClient from "../../lib/axios";
 
 const universities = [
   { id: "1", name: "Harvard University" },
@@ -44,57 +45,87 @@ const Uniform: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const endpoint = isLogin
-      ? "http://localhost:8080/api/uni-admin/login"
-      : "http://localhost:8080/api/uni-admin/initiate";
+    if (isLogin) {
+      // Login request
+      try {
+        const res = await apiClient.post(
+          "/api/uni-admin/login",
+          { email, password }
+        );
 
-    const body = isLogin
-      ? { email, password, university: selectedUniversity }
-      : { university: selectedUniversity, name, uid, email, aisheCode, phone };
+        if (!res.data.ok) {
+          throw new Error(res.data.message || "Login failed. Please try again.");
+        }
 
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+        // Store the JWT token in localStorage if received
+        if (res.data.token) {
+          localStorage.setItem('token', res.data.token);
+          console.log("Token stored in localStorage:", res.data.token);
+        }
+        
+        // Store user role in localStorage if available
+        if (res.data.data?.user?.role) {
+          localStorage.setItem('role', res.data.data.user.role);
+        }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
+        // Handle successful login
+        alert(res.data.message);
+        console.log("Login successful:", res.data);
+        // router.push("/dashboard"); // Uncomment to redirect after login
+      } catch (err: any) {
+        alert(err.message || "An error occurred during login");
+        console.error("Login error:", err);
+      }
+    } else {
+      // Registration initiation request - needs to match backend expectation
+      try {
+        const res = await apiClient.post(
+          "/api/uni-admin/initiate",
+          { 
+            aisheCode, 
+            name, 
+            email, 
+            phone, 
+            uid 
+          }
+        );
 
-      if (!isLogin) {
-        // This was a successful 'initiate' call
+        if (!res.data.ok) {
+          throw new Error(res.data.message || "Registration initiation failed. Please try again.");
+        }
+
+        // Handle successful registration initiation
         setIsOtpSent(true);
         alert("Registration initiated. Please check your email for an OTP.");
-      } else {
-        // This was a successful 'login' call
-        alert(data.message); // For login
-        // Example: router.push('/dashboard');
+        console.log("Registration initiated:", res.data);
+      } catch (err: any) {
+        alert(err.message || "An error occurred during registration initiation");
+        console.error("Registration initiation error:", err);
       }
-    } catch (err: any) {
-      alert(err.message);
     }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:4000/api/uni-admin/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, password }),
-      });
+      const res = await apiClient.post(
+        "/api/uni-admin/verify",
+        { email, otp, password }
+      );
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Invalid OTP or details");
+      if (!res.data.ok) {
+        throw new Error(res.data.message || "Invalid OTP or details");
+      }
 
-      alert(data.message); // e.g., "Registration successful! You can now log in."
+      alert(res.data.message); // e.g., "Registration successful! You can now log in."
+      console.log("OTP verification successful:", res.data);
       setIsLogin(true); // Switch to the login view
       setIsOtpSent(false); // Reset OTP state
       setPassword(""); // Clear password from state for security
       setOtp(""); // Clear OTP
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "An error occurred during OTP verification");
+      console.error("OTP verification error:", err);
     }
   };
 

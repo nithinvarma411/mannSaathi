@@ -5,6 +5,7 @@ import FloatingCard from "../loginForm/FloatingCard";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../ui/language-context";
+import apiClient from "../../lib/axios";
 
 const universities = [
   { id: "1", name: "Harvard University" },
@@ -37,24 +38,32 @@ const Form: React.FC = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await apiClient.post(
+        "/api/auth/login", 
+        payload
+      );
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (!res.data.ok) {
         // Handle server-side errors (e.g., wrong credentials)
-        throw new Error(data.message || "Login failed. Please try again.");
+        throw new Error(res.data.message || "Login failed. Please try again.");
+      }
+
+      // Store the JWT token in localStorage
+      console.log("Token", res)
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        console.log("Token stored in localStorage:", res.data.token);
+      }
+      
+      // Store user role in localStorage if available
+      if (res.data.user?.role) {
+        localStorage.setItem('role', res.data.user.role);
       }
 
       // Handle successful login
+      router.replace("/chat")
       alert("Login successful!");
-      console.log("Server response:", data);
+      console.log("Server response:", res.data);
       
       // Example: Redirect to a dashboard after successful login
       // router.push("/dashboard");
@@ -62,7 +71,7 @@ const Form: React.FC = () => {
     } catch (err: any) {
       // Handle network errors or errors thrown from the try block
       console.error("An error occurred during login:", err);
-      alert(err.message);
+      alert(err.message || "An error occurred during login");
     }
   };
 
@@ -141,7 +150,7 @@ const Form: React.FC = () => {
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"
-                  viewBox="0 0 24 24"
+                  viewBox="http://www.w3.org/2000/svg"
                   stroke="currentColor"
                 >
                   <path
@@ -157,7 +166,7 @@ const Form: React.FC = () => {
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"
-                  viewBox="0 0 24 24"
+                  viewBox="http://www.w3.org/2000/svg"
                   stroke="currentColor"
                 >
                   <path

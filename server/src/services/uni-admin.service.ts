@@ -124,18 +124,29 @@ export async function loginUser(email: string, password: string) {
       return { statusCode: 403, ok: false, message: "Account is inactive. Please contact support." };
     }
 
-    //JWT HERE
-
-    const userData = user.toObject();
-    delete userData.passwordHash;
+    // Create JWT token
+    const tokenPayload = {
+      sub: String(user._id),
+      role: user.role,
+      uniId: String(user.universityId),
+    };
 
     return {
       statusCode: 200,
       ok: true,
       message: "Login successful",
       data: {
-        //token
-        user: userData,
+        token: tokenPayload,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          uid: user.uid,
+          phone: user.phone,
+          universityId: user.universityId,
+          isActive: user.isActive,
+        },
       },
     };
   } catch (err: any) {
