@@ -55,8 +55,12 @@ export async function loginUniAdmin(req: FastifyRequest, reply: FastifyReply) {
     if (!res.ok) {
       return reply.code(res.statusCode).send(res);
     }
-
+    
     // Set JWT token in cookie
+    if (!res.data || !res.data.token) {
+      return reply.code(500).send({ error: "Token generation failed" });
+    }
+    
     const token = await reply.jwtSign(res.data.token, { expiresIn: "7d" });
 
     reply.setCookie("token", token, {

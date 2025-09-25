@@ -71,7 +71,14 @@ const Uniform: React.FC = () => {
         // Handle successful login
         alert(res.data.message);
         console.log("Login successful:", res.data);
-        // router.push("/dashboard"); // Uncomment to redirect after login
+        
+        // Redirect based on user role
+        const userRole = res.data.data?.user?.role;
+        if (userRole === "counselor") {
+          router.replace("/dashboard");  // Redirect counselors to /dashboard
+        } else if (userRole === "student") {
+          router.replace("/chat");  // Redirect students to /chat
+        }
       } catch (err: any) {
         alert(err.message || "An error occurred during login");
         console.error("Login error:", err);

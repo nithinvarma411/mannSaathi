@@ -61,12 +61,17 @@ const Form: React.FC = () => {
       }
 
       // Handle successful login
-      router.replace("/chat")
+     
       alert("Login successful!");
       console.log("Server response:", res.data);
       
-      // Example: Redirect to a dashboard after successful login
-      // router.push("/dashboard");
+      // Redirect based on user role
+      const userRole = res.data.user?.role;
+      if (userRole === "student") {
+        router.replace("/chat");  // Redirect students to /chat
+      } else if (userRole === "counselor") {
+        router.replace("/dashboard");  // Redirect counselors to /dashboard
+      }
 
     } catch (err: any) {
       // Handle network errors or errors thrown from the try block

@@ -16,7 +16,7 @@ apiClient.interceptors.request.use(
   (config) => {
     // Log the request in development mode to debug issues
     if (process.env.NODE_ENV !== 'production') {
-      console.log('Making request to:', config.baseURL + config.url, 'with config:', config);
+      console.log('Making request to:', (config.baseURL || '') + (config.url || ''), 'with config:', config);
     }
     return config;
   },
