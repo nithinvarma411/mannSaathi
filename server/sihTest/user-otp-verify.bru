@@ -1,0 +1,19 @@
+meta {
+  name: user-otp-verify
+  type: http
+  seq: 13
+}
+
+post {
+  url: http:localhost:4000/api/auth/verify-otp
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "ankitkr1001a@gmail.com",
+    "otp": "816802",
+    "password": "0987654321"
+  }
+}
