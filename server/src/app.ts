@@ -9,6 +9,7 @@ import adminRoutes from './routes/admin.routes';
 import uniAdminRoutes from './routes/uni-admin.routes';
 import reviewRoutes from './routes/review.routes';
 import chatRoutes from './routes/chat.routes';
+import aiRoutes from './routes/ai.routes';
 
 export function buildApp() {
   const app = fastify({ logger: true });
@@ -45,6 +46,7 @@ export function buildApp() {
   app.register(uniAdminRoutes);
   app.register(reviewRoutes);
   app.register(chatRoutes);
+  app.register(aiRoutes);
 
   return app;
 }

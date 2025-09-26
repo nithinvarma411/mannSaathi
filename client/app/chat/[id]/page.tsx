@@ -39,6 +39,7 @@ export default function ChatWithCounselor() {
   const centerInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const aiScrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Initialize view based on URL query parameters
   useEffect(() => {
@@ -92,28 +93,53 @@ export default function ChatWithCounselor() {
       if (!currentUserId && token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
-          currentUserId = payload.userId || payload.sub; // Common JWT payload fields
+          currentUserId = payload.userId || payload.id || payload.sub; // Try multiple common fields
         } catch (e) {
           console.error("Failed to extract userId from token", e);
         }
       }
       
-      const convertedMessages: Message[] = messages.map(msg => ({
-        id: msg._id,
-        role: msg.senderId._id === currentUserId ? "user" : "assistant",
-        text: msg.message,
-        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      }));
+      console.log("Current User ID:", currentUserId); // Debug log
+      console.log("Counselor ID (from URL):", id); // Debug log
+      
+      const convertedMessages: Message[] = messages.map(msg => {
+        // If the message sender is NOT the counselor (id from URL), then it's from the user
+        const isUserMessage = msg.senderId._id !== id;
+        console.log("Message from:", msg.senderId._id, "Counselor ID:", id, "Is user message:", isUserMessage); // Debug log
+        
+        return {
+          id: msg._id,
+          role: isUserMessage ? "user" : "assistant",
+          text: msg.message,
+          time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+      });
       setLocalMessages(convertedMessages);
     }
   }, [messages, id]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (view === "counselor" && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    } else if (view === "ai" && aiScrollContainerRef.current) {
+      aiScrollContainerRef.current.scrollTo({
+        top: aiScrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Instant scroll to bottom when messages load (no animation)
+    if (view === "counselor" && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    } else if (view === "ai" && aiScrollContainerRef.current) {
+      aiScrollContainerRef.current.scrollTop = aiScrollContainerRef.current.scrollHeight;
+    }
+    
     // when messages appear, focus bottom input
     if (localMessages.length > 0) {
       bottomInputRef.current?.focus();
@@ -148,6 +174,11 @@ export default function ChatWithCounselor() {
     setInput("");
     setIsSending(true);
 
+    // Trigger immediate smooth scroll after adding user message
+    setTimeout(() => {
+      scrollToBottom();
+    }, 50);
+
     // Send the message to the API
     try {
       const result = await sendMessage(id as string, text.trim());
@@ -176,7 +207,7 @@ export default function ChatWithCounselor() {
   };
 
   return (
-    <div className="min-h-dvh bg-black text-[#E5E7EB] flex flex-col relative">
+    <div className="h-dvh bg-black text-[#E5E7EB] flex flex-col relative overflow-hidden">
       <TopNav />
 
       {/* Profile Icon and Language Selector */}
@@ -186,7 +217,7 @@ export default function ChatWithCounselor() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex justify-center pt-4 pb-2 mt-20 relative z-10">
+      <div className="flex justify-center pt-4 pb-2 mt-20 relative z-10 flex-shrink-0">
         <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
           <button
             onClick={() => router.push('/chat?view=ai')}
@@ -232,7 +263,7 @@ export default function ChatWithCounselor() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10 min-h-0">
         {view === "counselor" ? (
           <>
             {/* Simple loading overlay - much cleaner */}
@@ -246,7 +277,7 @@ export default function ChatWithCounselor() {
             )}
             
             {/* Content with fade-in animation */}
-            <div className={`flex-1 flex flex-col transition-opacity duration-300 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
+            <div className={`flex-1 flex flex-col transition-opacity duration-300 min-h-0 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
               {localMessages.length === 0 ? (
               /* Show empty state when no messages exist yet */
               <div className="flex-1 flex items-center justify-center p-8">
@@ -311,10 +342,10 @@ export default function ChatWithCounselor() {
               </div>
               ) : (
                 // Messages list with bottom input
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-h-0">
                   <div
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto px-4 py-6"
+                    className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin"
                   >
                     <div className="max-w-3xl mx-auto space-y-6">
                       {localMessages.map((msg) => (
@@ -347,7 +378,196 @@ export default function ChatWithCounselor() {
                         </div>
                       ))}
 
-                      {isSending && (
+
+
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </div>
+
+                  {/* Bottom Input - moves here after first message */}
+                  <div className="flex-shrink-0 backdrop-blur-sm px-5 border-t border-white/10">
+                    <div className="max-w-3xl mx-auto py-4">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const val = bottomInputRef.current?.value || "";
+                          if (val.trim()) {
+                            bottomInputRef.current!.value = "";
+                            handleSend(val);
+                          }
+                        }}
+                      >
+                        <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
+                          <input
+                            ref={bottomInputRef}
+                            placeholder="Ask Anything"
+                            className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
+                            disabled={isSending}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                const val = e.currentTarget.value;
+                                if (val.trim()) {
+                                  e.currentTarget.value = "";
+                                  handleSend(val);
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="submit"
+                            disabled={isSending}
+                            className="p-2 rounded-xl bg-blue-800 text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                            aria-label="Send message"
+                          >
+                            <Send size={18} />
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          // AI Tab Content - using persistent AI conversation
+          <>
+            {/* Convert AI messages to display format */}
+            {(() => {
+              const { aiMessages, aiLoading, sendAIMessage: sendAI } = useChat();
+              const aiDisplayMessages = aiMessages.map(msg => ({
+                id: msg._id,
+                role: (msg.senderId?._id === "000000000000000000000000") ? "assistant" : "user",
+                text: msg.message,
+                time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              }));
+
+              const handleAISend = async (text: string) => {
+                if (!text.trim() || aiLoading || isSending) return;
+                setInput("");
+                setIsSending(true);
+                try {
+                  await sendAI(text.trim());
+                } catch (error) {
+                  console.error("Error getting AI response:", error);
+                } finally {
+                  setIsSending(false);
+                }
+              };
+
+              // Also add scrolling for AI messages
+              useEffect(() => {
+                if (aiDisplayMessages.length > 0) {
+                  const timer = setTimeout(() => {
+                    scrollToBottom();
+                  }, 100);
+                  return () => clearTimeout(timer);
+                }
+              }, [aiDisplayMessages]);
+
+              return aiDisplayMessages.length === 0 ? (
+                // Empty state for AI chat
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="w-full max-w-2xl text-center">
+                    <div className="mb-6">
+                      <div className="inline-flex items-center gap-3 justify-center mb-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 p-1">
+                          <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
+                            <Zap className="w-6 h-6 text-purple-300" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <h1 className="text-3xl font-semibold text-white mb-2">
+                        {t('chat_how_can_i_help')}
+                      </h1>
+                      <p className="text-slate-400 mb-6">
+                        {t('chat_type_message_instruction')}
+                      </p>
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAISend(input);
+                      }}
+                      className="mb-6"
+                    >
+                      <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm transition-all">
+                        <input
+                          ref={centerInputRef}
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          placeholder="Ask Anything"
+                          className="flex-1 bg-transparent text-slate-200 placeholder-slate-400 outline-none text-base"
+                          disabled={isSending || aiLoading}
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          disabled={!input.trim() || isSending || aiLoading}
+                          className="p-2 rounded-xl bg-gradient-to-r from-[#460075] to-[#0955b2] text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                          aria-label="Send message"
+                        >
+                          <Sparkle />
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {SUGGESTED_PROMPTS.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => handleAISend(t(p))}
+                          className="p-3 text-left rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-200 text-slate-300 hover:text-slate-200"
+                        >
+                          {t(p)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // AI messages list
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div 
+                    ref={aiScrollContainerRef}
+                    className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin"
+                    style={{ scrollBehavior: 'smooth' }}
+                  >
+                    <div className="max-w-3xl mx-auto space-y-6">
+                      {aiDisplayMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                              msg.role === "user"
+                                ? "bg-slate-700 text-white"
+                                : "bg-white/10 text-slate-200 border border-white/10"
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                              {msg.text}
+                            </p>
+                            {msg.time && (
+                              <span
+                                className={`text-xs mt-2 block ${
+                                  msg.role === "user"
+                                    ? "text-white/70"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                {msg.time}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {(isSending || aiLoading) && (
                         <div className="flex justify-start">
                           <div className="bg-white/10 text-slate-200 border border-white/10 rounded-2xl px-4 py-3">
                             <div className="flex space-x-1">
@@ -369,27 +589,39 @@ export default function ChatWithCounselor() {
                     </div>
                   </div>
 
-                  {/* Bottom Input - moves here after first message */}
-                  <div className=" backdrop-blur-sm px-5">
+                  {/* Bottom Input for AI chat */}
+                  <div className="flex-shrink-0 backdrop-blur-sm px-5 border-t border-white/10">
                     <div className="max-w-3xl mx-auto py-4">
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
                           const val = bottomInputRef.current?.value || "";
-                          handleSend(val);
+                          if (val.trim()) {
+                            bottomInputRef.current!.value = "";
+                            handleAISend(val);
+                          }
                         }}
                       >
                         <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
                           <input
                             ref={bottomInputRef}
-                            defaultValue=""
                             placeholder="Ask Anything"
                             className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
-                            disabled={isSending}
+                            disabled={isSending || aiLoading}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                const val = e.currentTarget.value;
+                                if (val.trim()) {
+                                  e.currentTarget.value = "";
+                                  handleAISend(val);
+                                }
+                              }
+                            }}
                           />
                           <button
                             type="submit"
-                            disabled={isSending}
+                            disabled={isSending || aiLoading}
                             className="p-2 rounded-xl bg-blue-800 text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                             aria-label="Send message"
                           >
@@ -400,71 +632,10 @@ export default function ChatWithCounselor() {
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </>
-        ) : (
-          // AI Tab Content (same as main chat page)
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="w-full max-w-2xl text-center">
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-3 justify-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 p-1">
-                    <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-purple-300" />
-                    </div>
-                  </div>
-                </div>
-
-                <h1 className="text-3xl font-semibold text-white mb-2">
-                  {t('chat_how_can_i_help')}
-                </h1>
-                <p className="text-slate-400 mb-6">
-                  {t('chat_type_message_instruction')}
-                </p>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSend(input);
-                }}
-                className="mb-6"
-              >
-                <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm transition-all">
-                  <input
-                    ref={centerInputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask Anything"
-                    className="flex-1 bg-transparent text-slate-200 placeholder-slate-400 outline-none text-base"
-                    disabled={isSending}
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    disabled={!input.trim() || isSending}
-                    className="p-2 rounded-xl bg-gradient-to-r from-[#460075] to-[#0955b2] text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                    aria-label="Send message"
-                  >
-                    <Sparkle />
-                  </button>
-                </div>
-              </form>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {SUGGESTED_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => handleSuggestionClick(t(p))}
-                    className="p-3 text-left rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-200 text-slate-300 hover:text-slate-200"
-                  >
-                    {t(p)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+        
         )}
       </div>
     </div>

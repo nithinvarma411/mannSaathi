@@ -154,6 +154,39 @@ body {
   scrollbar-width: none;     /* Firefox */
 }
 
+/* Custom scrollbar styles for chat containers */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.4);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7) !important;
+}
+
+/* Firefox scrollbar hiding when not hovering */
+.scrollbar-thin {
+  scrollbar-width: none;
+}
+
+.scrollbar-thin:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 114, 128, 0.4) transparent;
+}
+
 .glass {
   @apply bg-paper/60 backdrop-blur-md border-b border-white/20;
 }

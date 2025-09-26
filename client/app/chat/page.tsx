@@ -228,7 +228,6 @@ import { useChat } from "@/components/chat/context";
 
 export default function ChatPage() {
   const { t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [view, setView] = useState<"ai" | "counselor">("ai");
   
   const searchParams = useSearchParams();
@@ -245,11 +244,43 @@ export default function ChatPage() {
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Track initial AI load
+  const [localMessages, setLocalMessages] = useState<Message[]>([]); // For immediate user message display
   const [activeCounselor, setActiveCounselor] = useState<Counselor | null>(
     null,
   );
   const router = useRouter();
-  const { conversations, counselors, fetchCounselors } = useChat();
+  const { conversations, counselors, fetchCounselors, aiMessages, aiLoading, sendAIMessage } = useChat();
+
+  // Convert ChatMessage[] to Message[] for display and merge with local messages
+  const aiDisplayMessages: Message[] = aiMessages.map(msg => {
+    // Get current user ID from token payload or localStorage
+    const token = localStorage.getItem("token");
+    let currentUserId = localStorage.getItem("userId");
+    
+    // If we don't have userId in localStorage, try to extract from token
+    if (!currentUserId && token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUserId = payload.userId || payload.sub; // Common JWT payload fields
+      } catch (e) {
+        console.error("Failed to extract userId from token", e);
+      }
+    }
+    
+    // If message is from current user, it's "user", otherwise it's "assistant" (AI)
+    const isUserMessage = msg.senderId?._id === currentUserId;
+    
+    return {
+      id: msg._id,
+      role: isUserMessage ? "user" : "assistant",
+      text: msg.message,
+      time: new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+  });
+
+  // Merge AI messages with local messages (local messages override for immediate display)
+  const displayMessages: Message[] = [...aiDisplayMessages, ...localMessages];
 
   const bottomInputRef = useRef<HTMLInputElement | null>(null);
   const centerInputRef = useRef<HTMLInputElement | null>(null);
@@ -257,26 +288,52 @@ export default function ChatPage() {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
   };
 
   useEffect(() => {
     scrollToBottom();
     // when messages appear, focus bottom input
-    if (messages.length > 0) {
+    if (displayMessages.length > 0) {
       bottomInputRef.current?.focus();
     }
-  }, [messages]);
+  }, [displayMessages]);
 
   useEffect(() => {
     // if no messages, focus center input
-    if (messages.length === 0) {
+    if (displayMessages.length === 0) {
       centerInputRef.current?.focus();
     }
-  }, [messages.length]);
+  }, [displayMessages.length]);
+
+  // Complete loading when AI data is ready
+  useEffect(() => {
+    if (!aiLoading) {
+      // Small delay to prevent flash, then fade in content
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [aiLoading]);
+
+  // Clear local messages when AI messages are updated (to avoid duplicates)
+  useEffect(() => {
+    if (aiMessages.length > 0 && localMessages.length > 0) {
+      setLocalMessages([]);
+    }
+  }, [aiMessages.length]);
+
+  // Scroll to bottom when switching to AI view or when AI messages load initially
+  useEffect(() => {
+    if (view === "ai" && displayMessages.length > 0) {
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  }, [view, displayMessages.length]);
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || aiLoading) return;
 
     const now = new Date();
     const time = now.toLocaleTimeString([], {
@@ -284,7 +341,7 @@ export default function ChatPage() {
       minute: "2-digit",
     });
 
-    // Add user message
+    // Add user message to local state immediately for better UX
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -292,45 +349,26 @@ export default function ChatPage() {
       time,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setLocalMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(
-      () => {
-        let responseText =
-          "Thank you for sharing. I'm here to help you work through this.";
-
-        if (
-          text.toLowerCase().includes("anxious") ||
-          text.toLowerCase().includes("anxiety")
-        ) {
-          responseText =
-            "I understand you're feeling anxious. Let's try a quick breathing exercise: breathe in for 4 counts, hold for 4, then exhale for 6. Would you like me to guide you through some coping strategies?";
-        } else if (text.toLowerCase().includes("sleep")) {
-          responseText =
-            "Sleep issues can be really challenging. A consistent bedtime routine can help. What does your current evening routine look like?";
-        } else if (text.toLowerCase().includes("stress")) {
-          responseText =
-            "Stress affects us all differently. What are the main sources of stress in your life right now? Understanding them is the first step to managing them better.";
-        } else if (text.toLowerCase().includes("coping")) {
-          responseText =
-            "Coping strategies are personal and what works varies for everyone. Some effective techniques include deep breathing, grounding exercises, journaling, and progressive muscle relaxation. Which of these sounds most appealing to you?";
-        }
-
-        const assistantMsg: Message = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: responseText,
-          time,
-        };
-
-        setMessages((prev) => [...prev, assistantMsg]);
-        setIsLoading(false);
-      },
-      1000 + Math.random() * 1000,
-    );
+    try {
+      // Call the AI endpoint - this will automatically save to database and update context
+      const aiResponse = await sendAIMessage(text.trim());
+      
+      if (aiResponse) {
+        // Clear local messages since they're now in the main aiMessages from context
+        setLocalMessages([]);
+      } else {
+        // Handle error case by showing toast (already handled in sendAIMessage)
+        console.error("Failed to get AI response");
+      }
+    } catch (error) {
+      console.error("Error getting AI response:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmitCenter = (e: React.FormEvent) => {
@@ -341,6 +379,9 @@ export default function ChatPage() {
   const handleSubmitBottom = (e: React.FormEvent) => {
     e.preventDefault();
     const value = bottomInputRef.current?.value || "";
+    if (bottomInputRef.current) {
+      bottomInputRef.current.value = ""; // Clear the input immediately
+    }
     handleSend(value);
   };
 
@@ -354,7 +395,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-black text-[#E5E7EB] flex flex-col relative">
+    <div className="h-dvh bg-black text-[#E5E7EB] flex flex-col relative overflow-hidden">
       <TopNav />
 
       {/* Profile Icon and Language Selector */}
@@ -364,7 +405,7 @@ export default function ChatPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex justify-center pt-4 pb-2 mt-20 relative z-10">
+      <div className="flex justify-center pt-4 pb-2 mt-20 relative z-10 flex-shrink-0">
         <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
           <button
             onClick={() => {
@@ -404,7 +445,7 @@ export default function ChatPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full relative z-10 min-h-0">
         {view === "counselor" ? (
           <HistoryList
             onCounselorSelect={(counselor) => {
@@ -413,8 +454,20 @@ export default function ChatPage() {
           />
         ) : (
           <>
-            {/* If there are no messages show center input and welcome */}
-            {messages.length === 0 ? (
+            {/* Simple loading overlay - much cleaner */}
+            {isInitialLoading && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+                  <p className="text-slate-300 text-sm">Loading AI chat...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Content with fade-in animation */}
+            <div className={`flex-1 flex flex-col min-h-0 transition-opacity duration-300 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
+              {/* If there are no messages show center input and welcome */}
+              {displayMessages.length === 0 ? (
               <CenterInput
                 value={input}
                 onChange={(v) => setInput(v)}
@@ -426,13 +479,13 @@ export default function ChatPage() {
               />
             ) : (
               // Messages list with bottom input
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col min-h-0">
                 <div
                   ref={scrollContainerRef}
-                  className="flex-1 overflow-y-auto px-4 py-6"
+                  className="flex-1 overflow-y-auto px-4 py-6 min-h-0"
                 >
                   <div className="max-w-3xl mx-auto space-y-6">
-                    {messages.map((msg) => (
+                    {displayMessages.map((msg) => (
                       <div
                         key={msg.id}
                         className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -462,7 +515,7 @@ export default function ChatPage() {
                       </div>
                     ))}
 
-                    {isLoading && (
+                    {(isLoading || aiLoading) && (
                       <div className="flex justify-start">
                         <div className="bg-white/10 text-slate-200 border border-white/10 rounded-2xl px-4 py-3">
                           <div className="flex space-x-1">
@@ -485,14 +538,10 @@ export default function ChatPage() {
                 </div>
 
                 {/* Bottom Input - moves here after first message */}
-                <div className=" backdrop-blur-sm px-5">
+                <div className="flex-shrink-0 backdrop-blur-sm px-5 border-t border-white/10">
                   <div className="max-w-3xl mx-auto py-4">
                     <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const val = bottomInputRef.current?.value || "";
-                        handleSend(val);
-                      }}
+                      onSubmit={handleSubmitBottom}
                     >
                       <div className="relative flex items-center gap-3 p-3 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm focus-within:border-white/30 transition-colors">
                         <input
@@ -500,11 +549,11 @@ export default function ChatPage() {
                           defaultValue=""
                           placeholder="Ask Anything"
                           className="flex-1 bg-transparent text-slate-200 text-sm placeholder-slate-400 outline-none"
-                          disabled={isLoading}
+                          disabled={isLoading || aiLoading}
                         />
                         <button
                           type="submit"
-                          disabled={isLoading}
+                          disabled={isLoading || aiLoading}
                           className="p-2 rounded-xl bg-blue-800 text-white hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
                           aria-label="Send message"
                         >
@@ -516,6 +565,7 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
+            </div>
           </>
         )}
       </div>
